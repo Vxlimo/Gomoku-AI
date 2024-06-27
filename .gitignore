@@ -38,3 +38,5 @@ pip-delete-this-directory.txt
 
 *.o
 .DS_Store
+
+*.exe
