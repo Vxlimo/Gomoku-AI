@@ -331,7 +331,6 @@ std::pair<int, int> action(std::pair<int, int> loc)
 {
     board = Board();
     for (int i = 0; i < turnID; i++) {
-        // std::cerr << other[i].first << " " << other[i].second << " " << mine[i].first << " " << mine[i].second << std::endl;
         board.modify(other[i].first, other[i].second, 1);
         board.modify(mine[i].first, mine[i].second, 0);
     }
@@ -339,14 +338,14 @@ std::pair<int, int> action(std::pair<int, int> loc)
     other.push_back(loc);
 
     Coordinate res;
-    // if (turnID <= 1 && ai_side == 0)
-    // 	res = board.first_two_black();
-    // else if (turnID == 0)
-    //     res = board.second();
-    // else if (turnID == 1)
-    //     res = board.is_change();
-    // else
-    res = board.turn();
+    if (turnID <= 1 && ai_side == 0)
+        res = board.first_two_black();
+    else if (turnID == 0)
+        res = board.second();
+    else if (turnID == 1)
+        res = board.is_change();
+    else
+        res = board.turn();
 
     turnID++;
     mine.emplace_back(res.x, res.y);
