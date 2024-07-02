@@ -51,7 +51,7 @@ void init()
                 line_score[i] += 1e10;
             else {
                 if (l_open || r_open || last == 5)
-                    line_score[i] += 1e8;
+                    line_score[i] += 1e6;
             }
         }
         if (cnt == 3) {
@@ -153,7 +153,7 @@ ll score_point(int x, int y, int side)
 // Initially, loc being (-1,-1) means it's your first move
 // If this is the third step (with 2 black), where you can use the swap rule, your output could be either (-1, -1) to indicate that you choose a swap, or a coordinate (x,y) as normal.
 
-std::pair<std::pair<int, int>, ll> search(int depth, int side, ll alpha, ll beta, ll score)
+std::pair<std::pair<int, int>, ll> search(int cur_turn, int depth, int side, ll alpha, ll beta, ll score)
 {
     if (depth == 0) {
         return std::make_pair(std::make_pair(-1, -1), score);
@@ -168,28 +168,33 @@ std::pair<std::pair<int, int>, ll> search(int depth, int side, ll alpha, ll beta
             }
         }
     }
+    if (cur_turn == 2 && side == 1) {
+        pos_list.push(std::make_pair(-2 * score, std::make_pair(-1, -1)));
+    }
     for (int i = 1; i <= std::min(20, (int)pos_list.size()); i++) {
         int x = pos_list.top().second.first, y = pos_list.top().second.second;
         ll delta = pos_list.top().first;
         pos_list.pop();
-        if (board[x][y] != -1) {
-            continue;
-        }
         if (delta >= 1e15) {
             return std::make_pair(std::make_pair(x, y), delta);
         }
-        board[x][y] = side;
         std::pair<int, int> pos;
         ll new_score;
-        if (i != 1) {
-            std::tie(pos, new_score) = search(depth - 1, 1 - side, -alpha - 1, -alpha, -(score + delta));
+        if (x == -1 && y == -1) {
+            std::tie(pos, new_score) = search(3, depth - 1, side, -beta, -alpha, -(score + delta));
             new_score = -new_score;
+        } else {
+            board[x][y] = side;
+            if (i != 1) {
+                std::tie(pos, new_score) = search(cur_turn + (side == 1), depth - 1, 1 - side, -alpha - 1, -alpha, -(score + delta));
+                new_score = -new_score;
+            }
+            if (i == 1 || (new_score > alpha && new_score < beta)) {
+                std::tie(pos, new_score) = search(cur_turn + (side == 1), depth - 1, 1 - side, -beta, -alpha, -(score + delta));
+                new_score = -new_score;
+            }
+            board[x][y] = -1;
         }
-        if (i == 1 || (new_score > alpha && new_score < beta)) {
-            std::tie(pos, new_score) = search(depth - 1, 1 - side, -beta, -alpha, -(score + delta));
-            new_score = -new_score;
-        }
-        board[x][y] = -1;
         if (new_score > best_score) {
             best_score = new_score;
             best_pos = std::make_pair(x, y);
@@ -212,14 +217,13 @@ std::pair<int, int> action(std::pair<int, int> loc)
         cur_score -= score_point(loc.first, loc.second, 1 - ai_side);
         board[loc.first][loc.second] = 1 - ai_side;
     }
-    if (turn == 2 && ai_side == 1) {
-        if (cur_score < 0) {
-            ai_side = 1 - ai_side;
-            return std::make_pair(-1, -1);
-        }
+    auto [pos, new_score] = search(turn, SEARCH_DEPTH, ai_side, -1e17, 1e17, cur_score);
+    if (pos.first != -1 && pos.second != -1) {
+        cur_score += score_point(pos.first, pos.second, ai_side);
+        board[pos.first][pos.second] = ai_side;
+    } else {
+        ai_side = 1 - ai_side;
+        cur_score = -cur_score;
     }
-    auto [pos, new_score] = search(SEARCH_DEPTH, ai_side, -1e17, 1e17, cur_score);
-    cur_score += score_point(pos.first, pos.second, ai_side);
-    board[pos.first][pos.second] = ai_side;
     return pos;
 }
