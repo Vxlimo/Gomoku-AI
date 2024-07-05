@@ -4,13 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>五子棋</title>
+    <title>Gomoku Game</title>
     <link rel="stylesheet" href="../static/css/style.css">
 </head>
 
 <body>
-    <h1>五子棋</h1>
-    <div id="game-board"></div>
+    <h1 align="center">Gomoku Game</h1>
+    <div id="game-board" align="center" display="none"></div>
+    <div id="messages" align="center">
+        <div id="turn" align="center"></div>
+        <div id="special" align="center"></div>
+    </div>
+    <div id="controls" align="center">
+        <div id="player_controls" align="center">
+            <button id="player-first">Player First</button>
+            <button id="player-second">Player Second</button>
+        </div>
+        <div id="change_controls" align="center">
+            <button id="change">Change</button>
+        </div>
+        <div id="reset_controls" align="center">
+            <button id="reset">Reset</button>
+        </div>
+    </div>
     <script src="../static/lib/script.js"></script>
 </body>
 

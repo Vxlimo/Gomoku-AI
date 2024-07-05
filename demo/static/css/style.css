@@ -5,6 +5,10 @@ body {
     font-family: Arial, sans-serif;
 }
 
+#controls {
+    margin-top: 20px;
+}
+
 #game-board {
     display: grid;
     grid-template-columns: repeat(15, 40px);
@@ -23,4 +27,8 @@ body {
     align-items: center;
     font-size: 24px;
     cursor: pointer;
+}
+
+#messages {
+    margin-top: 20px;
 }

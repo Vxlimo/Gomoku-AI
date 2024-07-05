@@ -1,38 +1,39 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import random
+from flask import Flask, request, jsonify, render_template
+import subprocess
+import os
+import signal
 
 app = Flask(__name__)
-CORS(app)  # 允许所有来源的跨域请求
+ai_process = None
 
-# 初始化一个空的15x15棋盘
-board = [['' for _ in range(15)] for _ in range(15)]
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-def check_winner(board, player):
-    # 简单的胜利检查逻辑，需完善
-    return False
+def start_ai(ai_side):
+    global ai_process
+    if ai_process:
+        os.killpg(os.getpgid(ai_process.pid), signal.SIGTERM)  # Kill previous AI process
+    ai_process = subprocess.Popen(['./ai.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+    ai_process.stdin.write(f'{ai_side}\n'.encode())
+    ai_process.stdin.flush()
+
+@app.route('/start', methods=['POST'])
+def start_game():
+    data = request.get_json()
+    ai_side = data['ai_side']
+    start_ai(ai_side)
+    return jsonify({'status': 'AI started'})
 
 @app.route('/move', methods=['POST'])
 def move():
     data = request.get_json()
-    row = data['row']
-    col = data['col']
-    player = data['player']
-    board[row][col] = player
-
-    if check_winner(board, player):
-        return jsonify(status='success', message='Move accepted', winner=player)
-
-    # AI的简单决策逻辑，随机选择一个空位置
-    empty_cells = [(r, c) for r in range(15) for c in range(15) if board[r][c] == '']
-    if empty_cells:
-        ai_move = random.choice(empty_cells)
-        board[ai_move[0]][ai_move[1]] = 'O'
-        if check_winner(board, 'O'):
-            return jsonify(status='success', message='Move accepted', winner='O', aiMove={'row': ai_move[0], 'col': ai_move[1]})
-        return jsonify(status='success', message='Move accepted', aiMove={'row': ai_move[0], 'col': ai_move[1]})
-
-    return jsonify(status='success', message='Move accepted', winner=None, aiMove=None)
+    move = data['move']
+    ai_process.stdin.write(f'{move[0]} {move[1]}\n'.encode())
+    ai_process.stdin.flush()
+    ai_response = ai_process.stdout.readline().decode().strip().split()
+    ai_move = [int(ai_response[0]), int(ai_response[1])]
+    return jsonify({'move': ai_move})
 
 if __name__ == '__main__':
     app.run(debug=True)
