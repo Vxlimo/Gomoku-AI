@@ -76,7 +76,7 @@ class Board:
 @dataclass
 class EvaluationResult:
     num_plays: int
-    wins: Sequence[str]     # w.r.t. to the agents
+    wins: Sequence[int]     # w.r.t. to the agents
     agents_path: Sequence[str] | None = None
 
     def __post_init__(self) -> None:
@@ -155,7 +155,7 @@ class Judge:
             action = receive_as_action(self.procs[i])
             if action is None:
                 close_all()
-                return 1 - i
+                return self.board.WHITE_WIN if i == 0 else self.board.BLACK_WIN
             elif action == (-1, -1):
                 self.board.flip()
             else:
@@ -166,8 +166,6 @@ class Judge:
                 return end
             i = 1 - i
             send_action(self.procs[i], action)
-            # print(i)
-
 
 
 def evaluate(
@@ -192,7 +190,6 @@ def evaluate(
             ...
         which_black = 1 - which_black
        
-
     return EvaluationResult(num_plays, wins, agents_path)
 
 
@@ -215,12 +212,7 @@ def main(
         for i in range(num_workers)
     ])
     final_result: EvaluationResult = sum(results, EvaluationResult(0, [0, 0], agents_path))
-    # print(final_result)
     final_result.summary()
-
-
-
-
 
 
 if __name__ == '__main__':
