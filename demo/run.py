@@ -14,7 +14,7 @@ def start_ai(ai_side):
     global ai_process
     if ai_process:
         os.killpg(os.getpgid(ai_process.pid), signal.SIGTERM)  # Kill previous AI process
-    ai_process = subprocess.Popen(['./ai.exe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+    ai_process = subprocess.Popen(['./ai'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
     ai_process.stdin.write(f'{ai_side}\n'.encode())
     ai_process.stdin.flush()
 
@@ -36,4 +36,4 @@ def move():
     return jsonify({'move': ai_move})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
