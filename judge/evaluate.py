@@ -43,13 +43,13 @@ class Board:
 
     def __getitem__(self, idx: tuple[int, int]) -> np.int32:
         return self.board[idx]
-    
+
     def __setitem__(self, idx: tuple[int, int], val: int | np.int32) -> None:
         self.board[idx] = val
 
     def reset(self) -> None:
         self.board[:] = 0
-    
+
     def check_end(self) -> int:
         def check(board: np.ndarray, kernel: np.ndarray) -> np.ndarray:
             assert board.ndim == kernel.ndim == 2
@@ -65,7 +65,7 @@ class Board:
             if np.count_nonzero(board) >= 225:
                 return self.DRAW
             return self.NOT_END
-        
+
         for _filter in self.filters:
             check_result = check(self.board, _filter)
             if check_result != self.NOT_END:
@@ -82,7 +82,7 @@ class EvaluationResult:
     def __post_init__(self) -> None:
         assert len(self.wins) == 2
         if self.agents_path is not None:
-            assert len(self.agents_path) == 2 
+            assert len(self.agents_path) == 2
 
     def __add__(self, other: 'EvaluationResult') -> 'EvaluationResult':
         assert (
@@ -95,12 +95,12 @@ class EvaluationResult:
             [self.wins[0] + other.wins[0], self.wins[1] + other.wins[1]],
             self.agents_path if self.agents_path is not None else other.agents_path
         )
-    
+
     def get_scores(self) -> list[float]:
         assert self.num_plays > 0
         score = (self.wins[0] - self.wins[1]) / self.num_plays
         return [score, -score]
-    
+
     def summary(self) -> None:
         assert self.agents_path is not None
         scores = self.get_scores()
@@ -108,7 +108,7 @@ class EvaluationResult:
         print(f'num plays: {self.num_plays}')
         print(f'Agent {self.agents_path[0]}:\nscore = {scores[0]} | wins = {self.wins[0]}')
         print(f'Agent {self.agents_path[1]}:\nscore = {scores[1]} | wins = {self.wins[1]}')
-    
+
 
 class Judge:
     def __init__(self, black_path: str, white_path: str) -> None:
@@ -130,11 +130,11 @@ class Judge:
             proc.stdin.flush()
         def receive(proc: subprocess.Popen) -> str:
             return proc.stdout.readline().strip().decode()
-    
+
         for i, proc in enumerate(self.procs):
             send(proc, i)
             _ = receive(proc)
-        
+
         def receive_as_action(proc: subprocess.Popen) -> tuple[int, int] | None:    # None denotes output error
             value = receive(proc).split(' ')
             if len(value) != 2:
@@ -144,11 +144,11 @@ class Judge:
             return int(value[0]), int(value[1])
         def send_action(proc: subprocess.Popen, action: tuple[int, int]) -> None:
             send(proc, f'{action[0]} {action[1]}')
-        
+
         def close_all() -> None:
             for proc in self.procs:
                 proc.terminate()
-        
+
         send_action(self.procs[0], (-1, -1))
         i = 0
         while True:
@@ -171,7 +171,7 @@ class Judge:
 def evaluate(
     agents_path: Sequence[str],
     num_plays: int,
-    which_black_first: int,  
+    which_black_first: int,
 ) -> EvaluationResult:
     assert len(agents_path) == 2
     assert num_plays > 0
@@ -189,7 +189,7 @@ def evaluate(
         else:
             ...
         which_black = 1 - which_black
-       
+
     return EvaluationResult(num_plays, wins, agents_path)
 
 

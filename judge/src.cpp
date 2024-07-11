@@ -1,12 +1,11 @@
 #include "AIController.h"
-#include <cassert>
 #include <cstring>
 #include <queue>
 #include <tuple>
 #include <utility>
 #define ll long long
 
-extern int ai_side; // 0: black, 1: white
+extern int ai_side;
 std::string ai_name = "no_name";
 
 int turn = 0;
@@ -16,9 +15,8 @@ ll line_score[729], cur_score;
 int dx[4] = { 1, 0, 1, 1 }, dy[4] = { 0, 1, 1, -1 };
 const int SEARCH_DEPTH = 6;
 const int SEARCH_WIDTH = 20;
-const int SMALLER_SEARCH_DEPTH = 10;
+const int KILLER_SEARCH_DEPTH = 10;
 
-// init function is called once at the beginning
 void init()
 {
     for (int x = 0; x < 15; x++) {
@@ -159,11 +157,19 @@ ll score_point(int x, int y, int side)
     return my_score - op_score;
 }
 
-// loc is the action of your opponent
-// Initially, loc being (-1,-1) means it's your first move
-// If this is the third step (with 2 black), where you can use the swap rule, your output could be either (-1, -1) to indicate that you choose a swap, or a coordinate (x,y) as normal.
-
-std::pair<std::pair<int, int>, ll> search(int cur_turn, int depth, int side, ll alpha, ll beta, ll score, bool smaller = false)
+bool check_near(int x, int y)
+{
+    for (int i = x - 2; i <= x + 2; i++) {
+        for (int j = y - 2; j <= y + 2; j++) {
+            if (i < 0 || i >= 15 || j < 0 || j >= 15)
+                continue;
+            if (board[i][j] != -1)
+                return true;
+        }
+    }
+    return false;
+}
+std::pair<std::pair<int, int>, ll> search(int cur_turn, int depth, int side, ll alpha, ll beta, ll score, bool killer = false)
 {
     if (depth == 0) {
         return std::make_pair(std::make_pair(-1, -1), score);
@@ -173,7 +179,7 @@ std::pair<std::pair<int, int>, ll> search(int cur_turn, int depth, int side, ll 
     std::priority_queue<std::pair<ll, std::pair<int, int>>> pos_list;
     for (int x = 0; x < 15; x++) {
         for (int y = 0; y < 15; y++) {
-            if (board[x][y] == -1) {
+            if (board[x][y] == -1 && (cur_turn <= 2 || check_near(x, y))) {
                 pos_list.push(std::make_pair(score_point(x, y, side), std::make_pair(x, y)));
             }
         }
@@ -188,26 +194,26 @@ std::pair<std::pair<int, int>, ll> search(int cur_turn, int depth, int side, ll 
         if (delta >= 1e15) {
             return std::make_pair(std::make_pair(x, y), delta);
         }
-        if (smaller && delta <= 1e6)
+        if (killer && delta <= 1e6)
             break;
         std::pair<int, int> pos;
         ll new_score;
         if (x == -1 && y == -1) {
-            std::tie(pos, new_score) = search(3, depth - 1, side, -beta, -alpha, -(score + delta), smaller);
+            std::tie(pos, new_score) = search(3, depth - 1, side, -beta, -alpha, -(score + delta), killer);
             new_score = -new_score;
         } else {
             board[x][y] = side;
             if (i != 1) {
-                std::tie(pos, new_score) = search(cur_turn + (side == 1), depth - 1, 1 - side, -alpha - 1, -alpha, -(score + delta), smaller);
+                std::tie(pos, new_score) = search(cur_turn + (side == 1), depth - 1, 1 - side, -alpha - 1, -alpha, -(score + delta), killer);
                 new_score = -new_score;
             }
             if (i == 1 || (new_score > alpha && new_score < beta)) {
-                std::tie(pos, new_score) = search(cur_turn + (side == 1), depth - 1, 1 - side, -beta, -alpha, -(score + delta), smaller);
+                std::tie(pos, new_score) = search(cur_turn + (side == 1), depth - 1, 1 - side, -beta, -alpha, -(score + delta), killer);
                 new_score = -new_score;
             }
             board[x][y] = -1;
         }
-        if (new_score > best_score) {
+        if (new_score > best_score || i == 1) {
             best_score = new_score;
             best_pos = std::make_pair(x, y);
         }
@@ -215,9 +221,6 @@ std::pair<std::pair<int, int>, ll> search(int cur_turn, int depth, int side, ll 
         if (alpha >= beta) {
             return std::make_pair(best_pos, best_score);
         }
-    }
-    if (best_pos.first == -1 && best_pos.second == -1 && turn != 2) {
-        best_pos = pos_list.top().second;
     }
     return std::make_pair(best_pos, best_score);
 }
@@ -232,10 +235,9 @@ std::pair<int, int> action(std::pair<int, int> loc)
         cur_score -= score_point(loc.first, loc.second, 1 - ai_side);
         board[loc.first][loc.second] = 1 - ai_side;
     }
-    auto [pos, new_score] = search(turn, SEARCH_DEPTH, ai_side, -1e17, 1e17, cur_score);
-    auto [smaller_pos, smaller_score] = search(turn, SMALLER_SEARCH_DEPTH, ai_side, -1e17, 1e17, cur_score, true);
-    if (new_score < smaller_score) {
-        pos = smaller_pos;
+    auto [pos, score] = search(turn, KILLER_SEARCH_DEPTH, ai_side, -1e17, 1e17, cur_score, true);
+    if (score < 1e15) {
+        std::tie(pos, score) = search(turn, SEARCH_DEPTH, ai_side, -1e17, 1e17, cur_score);
     }
     if (pos.first != -1 && pos.second != -1) {
         cur_score += score_point(pos.first, pos.second, ai_side);
