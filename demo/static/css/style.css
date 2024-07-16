@@ -29,6 +29,10 @@ body {
     cursor: pointer;
 }
 
+.cell.last-move {
+    color: red;
+}
+
 #messages {
     margin-top: 20px;
 }

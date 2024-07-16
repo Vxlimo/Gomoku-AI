@@ -4,6 +4,7 @@ let isPlayerTurn = false;
 let gameActive = false;
 let playerSide;
 var turn = 0;
+var lastMove = { row: null, column: null };
 
 function createBoard() {
     const gameBoard = document.getElementById('game-board');
@@ -22,9 +23,13 @@ function createBoard() {
 function resetBoard() {
     board = Array.from({ length: boardSize }, () => Array(boardSize).fill(''));
     const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => cell.textContent = '');
+    cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('last-move');
+    });
     isPlayerTurn = gameActive = false;
     turn = 0;
+    lastMove = { row: null, column: null };
     document.getElementById('player-first').disabled = false;
     document.getElementById('player-second').disabled = false;
     document.getElementById('change').disabled = true;
@@ -72,6 +77,7 @@ function handleMove(event) {
     turn++;
     board[row][col] = 'X';
     event.target.textContent = 'X';
+    highlightLastMove(row, col);
     isPlayerTurn = false;
     document.getElementById('turn').textContent = 'AI\'s turn';
     document.getElementById('special').textContent = '';
@@ -79,8 +85,9 @@ function handleMove(event) {
     if (checkWin(row, col, 'X')) {
         endGame('You win!');
     }
-
-    sendMove([row, col]);
+    else {
+        sendMove([row, col]);
+    }
 }
 
 function sendMove(move) {
@@ -105,6 +112,7 @@ function sendMove(move) {
                 board[row][col] = 'O';
                 const cell = document.querySelector(`.cell[data-row='${row}'][data-col='${col}']`);
                 cell.textContent = 'O';
+                highlightLastMove(row, col);
                 isPlayerTurn = true;
                 document.getElementById('turn').textContent = 'Your turn';
                 document.getElementById('special').textContent = '';
@@ -119,6 +127,16 @@ function sendMove(move) {
                 }
             }
         });
+}
+
+function highlightLastMove(row, col) {
+    if (lastMove.row !== null && lastMove.col !== null) {
+        const lastCell = document.querySelector(`.cell[data-row='${lastMove.row}'][data-col='${lastMove.col}']`);
+        lastCell.classList.remove('last-move');
+    }
+    const currentCell = document.querySelector(`.cell[data-row='${row}'][data-col='${col}']`);
+    currentCell.classList.add('last-move');
+    lastMove = { row, col };
 }
 
 function flipBoard() {
